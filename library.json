@@ -1,0 +1,22 @@
+{
+  "name": "gob_GC0308",
+  "description": "Complement of missing features and (possibly) correction of mistake in the esp32-camera driver for GC0308",
+  "keywords": "ESP32, GC0308",
+  "authors": {
+    "name": "GOB",
+    "url": "https://github.com/GOB52",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GOB52/gob_GC0308.git"
+  },
+  "version": "0.0.1",
+  "build": {
+    "libArchive": false
+  },
+  "headers": "gob_gc0308.hpp",
+  "license": "MIT",
+  "platforms": "espressif32",
+  "frameworks": "arduino"
+}
