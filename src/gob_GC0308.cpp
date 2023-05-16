@@ -19,26 +19,6 @@ extern "C"
 
 template<typename T, size_t N> constexpr auto size(const T(&)[N]) noexcept -> size_t { return N; }
 
-enum SpecialEffect : int8_t
-{
-    SE_NoEffect,
-    SE_Negative,
-    SE_Grayscale,
-    SE_RedTint,
-    SE_GreenTint,
-    SE_BlueTint,
-    SE_Sepia,
-};
-
-enum WhieBalance : int8_t
-{
-    WB_Auto,
-    WB_Sunny,
-    WB_Cloudy,
-    WB_Office,
-    WB_Home,
-};
-
 namespace
 {
 constexpr char TAG[] = "GCB_GC0308";
@@ -254,8 +234,7 @@ int set_wb_mode(sensor_t *s, int mode)
 }
 
 //
-namespace gc0308 
-{
+namespace gob { namespace GC0308  {
 
 bool complementDriver()
 {
@@ -279,4 +258,4 @@ bool complementDriver()
 }
 
 //
-}
+}}
