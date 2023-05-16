@@ -7,7 +7,7 @@
 */
 #include <esp_camera.h>
 #include "gob_GC0308.hpp"
-#include <esp-hal-log.h>
+#include <esp_log.h>
 #include <pgmspace.h>
 
 // esp32-camera sccb.c
