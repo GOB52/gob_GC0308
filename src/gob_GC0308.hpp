@@ -20,28 +20,28 @@ namespace gob { namespace GC0308  {
 //! @enum SpecialEffect
 enum SpecialEffect : int8_t
 {
-    SE_NoEffect,  //!< @brief No effect
-    SE_Negative,  //!< @brief Negative effect
-    SE_Grayscale, //!< @brief Grayscale effect
-    SE_RedTint,   //!< @brief Red tint effect
-    SE_GreenTint, //!< @brief Green tint effect
-    SE_BlueTint,  //!< @brief Blue tint effect
-    SE_Sepia,     //!< @brief Sepia effect
+    NoEffect,  //!< @brief No effect
+    Negative,  //!< @brief Negative effect
+    Grayscale, //!< @brief Grayscale effect
+    RedTint,   //!< @brief Red tint effect
+    GreenTint, //!< @brief Green tint effect
+    BlueTint,  //!< @brief Blue tint effect
+    Sepia,     //!< @brief Sepia effect
 };
 
 //! @enum WhiteBalance
-enum WhieBalance : int8_t
+enum WhiteBalance : int8_t
 {
-    WB_Auto,    //!< Automatic
-    WB_Sunny,   //!< Manual (Sunny)
-    WB_Cloudy,  //!< Manual (Cloudy)
-    WB_Office,  //!< Manual (Office)
-    WB_Home,    //!< Manual (Home)
+    Auto,    //!< Automatic
+    Sunny,   //!< Manual (Sunny)
+    Cloudy,  //!< Manual (Cloudy)
+    Office,  //!< Manual (Office)
+    Home,    //!< Manual (Home)
 };
 
 /*!
   @brief complement esp32-camera GC0308 driver
-  @warning Must be call after camera_init() once.
+  @warning Must be call after esp_camera_init() once.
   @note Delete set_gain_ctrl
   @note Add set_agc_gain
   @note Add set_specia_effect

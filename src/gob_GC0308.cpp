@@ -7,7 +7,7 @@
 */
 #include <esp_camera.h>
 #include "gob_GC0308.hpp"
-#include <esp_log.h>
+#include <esp32-hal-log.h>
 #include <pgmspace.h>
 
 // esp32-camera sccb.c
@@ -21,7 +21,8 @@ template<typename T, size_t N> constexpr auto size(const T(&)[N]) noexcept -> si
 
 namespace
 {
-constexpr char TAG[] = "GCB_GC0308";
+constexpr uint8_t REG_CONTRAST = 0xb3;
+constexpr uint8_t REG_AGC_GAIN = 0x50;
 
 struct RegVal { const uint8_t reg; const uint8_t val; };
 struct Params { const size_t sz;   const RegVal* params; };
@@ -126,38 +127,39 @@ PROGMEM const Params param_special_effect[] =
 // For White balance
 PROGMEM const RegVal wb_auto[] =
 {
-    { 0x5a, 0x4c }, // AWB_R_gain 2.6 bits red channel gain from AWB
+    { 0x5a, 0x50 }, // AWB_R_gain 2.6 bits red channel gain from AWB
     { 0x5b, 0x40 }, // AWB_G_gain 2.6 bits green channel gain from AWB
-    { 0x5c, 0x56 }, // AWB_B_gain 2.6 bits blue channel gain from AWB
+    { 0x5c, 0x48 }, // AWB_B_gain 2.6 bits blue channel gain from AWB
 };
 
 PROGMEM const RegVal wb_sunny[] =
 {
-    { 0x5a, 0x74 },
-    { 0x5b, 0x52 },
-    { 0x5c, 0x40 },
+    { 0x5a, 0x5e },
+    { 0x5b, 0x41 },
+    { 0x5c, 0x54 },
 };
 
 PROGMEM const RegVal wb_cloudy[] =
 {
-    { 0x5a, 0x8c },
-    { 0x5b, 0x50 },
-    { 0x5c, 0x40 },
+    { 0x5a, 0x65 },
+    { 0x5b, 0x41 },
+    { 0x5c, 0x4f },
 };
 
 PROGMEM const RegVal wb_office[] =
 {
-    { 0x5a, 0x40 },
-    { 0x5b, 0x42 },
-    { 0x5c, 0x50 },
+    { 0x5a, 0x52 },
+    { 0x5b, 0x41 },
+    { 0x5c, 0x66 },
 };
 
 PROGMEM const RegVal wb_home[] =
 {
-    { 0x5a, 0x48 },
-    { 0x5b, 0x40 },
-    { 0x5c, 0x5c },
+    { 0x5a, 0x42 },
+    { 0x5b, 0x3f },
+    { 0x5c, 0x71 },
 };
+
 
 PROGMEM const Params param_wb[] =
 {
@@ -170,15 +172,19 @@ PROGMEM const Params param_wb[] =
 
 // --------------------------------
 // Camera methods
+
+using gob::GC0308::SpecialEffect::NoEffect;
+using gob::GC0308::SpecialEffect::Sepia;
+using gob::GC0308::WhiteBalance::Auto;
+using gob::GC0308::WhiteBalance::Home;
+
 int set_dummy(sensor_t*, int) { return -1; }
 
 int set_contrast(sensor_t *s, int contrast)
 {
-    if(contrast < 0 || contrast > 255) { return -1; }
-    
-    s->status.contrast = contrast;
+    s->status.contrast = contrast;;
     int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
-    ret |= SCCB_Write(s->slv_addr, 0xb3, contrast); //2.6bits, 0x40=1.x
+    ret |= SCCB_Write(s->slv_addr, REG_CONTRAST, contrast); //2.6bits, 0x40=1.x
     return ret;
 }
 
@@ -188,13 +194,13 @@ int set_agc_gain(sensor_t* s, int val)
 
     s->status.agc_gain = val;
     int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
-    ret |= SCCB_Write(s->slv_addr, 0x50, val); // [5:0] global_gain, 2.4bits, 0x10 is 1.0x
+    ret |= SCCB_Write(s->slv_addr, REG_AGC_GAIN, val); // [5:0] global_gain, 2.4bits, 0x10 is 1.0x
     return ret;
 }
 
 int set_special_effect(sensor_t *s, int effect)
 {
-    if(effect < SE_NoEffect || effect > SE_Sepia) { return -1; }
+    if(effect < NoEffect || effect > Sepia) { return -1; }
 
     s->status.special_effect = effect;
 
@@ -211,14 +217,14 @@ int set_special_effect(sensor_t *s, int effect)
 
 int set_wb_mode(sensor_t *s, int mode)
 {
-    if(mode < WB_Auto || mode > WB_Home) { return -1; }
+    if(mode < Auto || mode > Home) { return -1; }
 
     s->status.wb_mode = mode;
 
     int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
     
     uint8_t rval = SCCB_Read(s->slv_addr, 0x22); // AAAA_enable  [1] AWB enable
-    rval = (rval & ~0x02U) | ((mode == WB_Auto) ? 0x02 : 0x00);
+    rval = (rval & ~0x02U) | ((mode == Auto) ? 0x02 : 0x00);
     ret |= SCCB_Write(s->slv_addr, 0x22, rval);
     
     size_t sz = param_wb[mode].sz;
@@ -239,20 +245,27 @@ namespace gob { namespace GC0308  {
 bool complementDriver()
 {
     auto s = esp_camera_sensor_get();
-    if(!s || s->id.PID != GC0308_PID) { ESP_LOGE(TAG, "%s", "GC0308 not detected"); return false; }
+    if(!s || s->id.PID != GC0308_PID) { log_e("GC0308 not detected"); return false; }
 
-    // Delete gain ctrl
-    // In esp32-camera it is set but probably wrong?
+    /*
+      Delete set_gain_ctrl
+      esp32-camera registers a function equivalent to set_agc_gain.
+      Is this a mistake since this method is supposed to turn on/off gain_ctrl?
+    */
     s->set_gain_ctrl = set_dummy;
+    s->status.agc = 0;
 
     // Add agc gain
     s->set_agc_gain = set_agc_gain;
+    s->status.agc_gain = SCCB_Read(s->slv_addr, REG_AGC_GAIN);
     // Add special effect
     s->set_special_effect = set_special_effect;
+    s->status.special_effect = 0;
     // Add wb_mode
     s->set_wb_mode = set_wb_mode;
-    // Change my set_contrast (Because the original does not set a value to the status)
+    // Change my set_contrast (Because the esp32-camera does not set a value to the status)
     s->set_contrast = set_contrast;
+    s->status.contrast = SCCB_Read(s->slv_addr, REG_CONTRAST);
 
     return true;
 }
