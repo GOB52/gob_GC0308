@@ -260,10 +260,12 @@ bool complementDriver()
     s->status.agc_gain = SCCB_Read(s->slv_addr, REG_AGC_GAIN);
     // Add special effect
     s->set_special_effect = set_special_effect;
-    s->status.special_effect = 0;
+    s->status.special_effect = gob::GC0308::SpecialEffect::NoEffect;
     // Add wb_mode
     s->set_wb_mode = set_wb_mode;
-    // Change my set_contrast (Because the esp32-camera does not set a value to the status)
+    s->status.wb_mode = gob::GC0308::WhiteBalance::Auto;
+
+    // Replace set_contrast (Because the esp32-camera does not set a value to the status)
     s->set_contrast = set_contrast;
     s->status.contrast = SCCB_Read(s->slv_addr, REG_CONTRAST);
 
