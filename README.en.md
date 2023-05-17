@@ -39,7 +39,7 @@ void foo()
 }
 ```
 
-## Changes since esp32-camera GC0308
+##  Additions/changes to esp32-camera GC0308
 ### Delete
 * set\_gain\_ctrl  
 Looking at the behavior of other drivers, it seems that turning AGC ON/OFF is the original behavior.  

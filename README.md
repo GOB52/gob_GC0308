@@ -44,7 +44,7 @@ void foo()
 }
 ```
 
-## esp32-camera GC0308 からの変更箇所
+## esp32-camera GC0308 への追加/変更点
 ### 削除
 * set\_gain\_ctrl  
 他のドライバの挙動を見るに、AGC の ON/OFF をするのが本来の挙動と思われます。  
