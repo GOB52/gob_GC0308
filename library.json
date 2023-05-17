@@ -1,7 +1,7 @@
 {
   "name": "gob_GC0308",
   "description": "Complement of missing features and (possibly) correction of mistake in the esp32-camera driver for GC0308",
-  "keywords": "ESP32S3,Camera,GC0308",
+  "keywords": "ESP32,ESP32-S3,Camera,GC0308,M5Stack-CoreS3",
   "authors": {
     "name": "GOB",
     "url": "https://github.com/GOB52",
