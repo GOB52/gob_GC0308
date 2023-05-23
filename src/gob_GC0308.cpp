@@ -21,8 +21,11 @@ template<typename T, size_t N> constexpr auto size(const T(&)[N]) noexcept -> si
 
 namespace
 {
+constexpr uint8_t REG_RESET_RELATED = 0xfe;
+constexpr uint8_t REG_AAAA_ENABLE = 0x22;
 constexpr uint8_t REG_CONTRAST = 0xb3;
 constexpr uint8_t REG_AGC_GAIN = 0x50;
+constexpr uint8_t REG_SATURATION = 0xb0;
 
 struct RegVal { const uint8_t reg; const uint8_t val; };
 struct Params { const size_t sz;   const RegVal* params; };
@@ -178,12 +181,17 @@ using gob::GC0308::SpecialEffect::Sepia;
 using gob::GC0308::WhiteBalance::Auto;
 using gob::GC0308::WhiteBalance::Home;
 
+inline int set_register_page(sensor_t* s, int page)
+{
+    return SCCB_Write(s->slv_addr, REG_RESET_RELATED, page != 0);
+}
+
 int set_dummy(sensor_t*, int) { return -1; }
 
 int set_contrast(sensor_t *s, int contrast)
 {
     s->status.contrast = contrast;;
-    int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
+    int ret = set_register_page(s, 0);
     ret |= SCCB_Write(s->slv_addr, REG_CONTRAST, contrast); //2.6bits, 0x40=1.x
     return ret;
 }
@@ -193,8 +201,21 @@ int set_agc_gain(sensor_t* s, int val)
     if(val < 0 || val > 63) { return -1; }
 
     s->status.agc_gain = val;
-    int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
+    int ret = set_register_page(s, 0);
     ret |= SCCB_Write(s->slv_addr, REG_AGC_GAIN, val); // [5:0] global_gain, 2.4bits, 0x10 is 1.0x
+    return ret;
+}
+
+int set_saturation(sensor_t* s, int val)
+{
+    s->status.saturation = val;
+
+    int ret = set_register_page(s, 0);
+    
+    uint8_t rval = SCCB_Read(s->slv_addr,REG_AAAA_ENABLE ); // AAAA_enable  [4] auto_SA
+    rval = (rval & ~0x10U);
+    ret |= SCCB_Write(s->slv_addr, REG_AAAA_ENABLE, rval);
+    ret |= SCCB_Write(s->slv_addr, REG_SATURATION, val); 
     return ret;
 }
 
@@ -204,7 +225,7 @@ int set_special_effect(sensor_t *s, int effect)
 
     s->status.special_effect = effect;
 
-    int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
+    int ret = set_register_page(s, 0);
     size_t sz = param_special_effect[effect].sz;
     auto p = param_special_effect[effect].params;
     while(!ret && sz--)
@@ -221,11 +242,11 @@ int set_wb_mode(sensor_t *s, int mode)
 
     s->status.wb_mode = mode;
 
-    int ret = SCCB_Write(s->slv_addr, 0xFE, 0); // page 0
+    int ret = set_register_page(s, 0);
     
-    uint8_t rval = SCCB_Read(s->slv_addr, 0x22); // AAAA_enable  [1] AWB enable
+    uint8_t rval = SCCB_Read(s->slv_addr,REG_AAAA_ENABLE ); // AAAA_enable  [1] AWB enable
     rval = (rval & ~0x02U) | ((mode == Auto) ? 0x02 : 0x00);
-    ret |= SCCB_Write(s->slv_addr, 0x22, rval);
+    ret |= SCCB_Write(s->slv_addr, REG_AAAA_ENABLE, rval);
     
     size_t sz = param_wb[mode].sz;
     auto p = param_wb[mode].params;
@@ -247,6 +268,9 @@ bool complementDriver()
     auto s = esp_camera_sensor_get();
     if(!s || s->id.PID != GC0308_PID) { log_e("GC0308 not detected"); return false; }
 
+    int ret = set_register_page(s, 0);
+    if(!ret) { log_e("Failed to write register %d",ret); return false; }
+    
     /*
       Delete set_gain_ctrl
       esp32-camera registers a function equivalent to set_agc_gain.
@@ -264,7 +288,10 @@ bool complementDriver()
     // Add wb_mode
     s->set_wb_mode = set_wb_mode;
     s->status.wb_mode = gob::GC0308::WhiteBalance::Auto;
-
+    // Add saturation
+    s->set_saturation = set_saturation;
+    s->status.saturation = SCCB_Read(s->slv_addr, REG_SATURATION);
+    
     // Replace set_contrast (Because the esp32-camera does not set a value to the status)
     s->set_contrast = set_contrast;
     s->status.contrast = SCCB_Read(s->slv_addr, REG_CONTRAST);
