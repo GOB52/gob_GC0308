@@ -15,7 +15,7 @@
 
 #include <cstdint>
 
-namespace gob { namespace GC0308  {
+namespace goblib { namespace GC0308  {
 
 //! @enum SpecialEffect
 enum SpecialEffect : int8_t

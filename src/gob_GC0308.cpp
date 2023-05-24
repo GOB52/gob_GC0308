@@ -176,14 +176,14 @@ PROGMEM const Params param_wb[] =
 // --------------------------------
 // Camera methods
 
-using gob::GC0308::SpecialEffect::NoEffect;
-using gob::GC0308::SpecialEffect::Sepia;
-using gob::GC0308::WhiteBalance::Auto;
-using gob::GC0308::WhiteBalance::Home;
+using goblib::GC0308::SpecialEffect::NoEffect;
+using goblib::GC0308::SpecialEffect::Sepia;
+using goblib::GC0308::WhiteBalance::Auto;
+using goblib::GC0308::WhiteBalance::Home;
 
 inline int set_register_page(sensor_t* s, int page)
 {
-    return SCCB_Write(s->slv_addr, REG_RESET_RELATED, page != 0);
+    return SCCB_Write(s->slv_addr, REG_RESET_RELATED, page & 1);
 }
 
 int set_dummy(sensor_t*, int) { return -1; }
@@ -261,7 +261,7 @@ int set_wb_mode(sensor_t *s, int mode)
 }
 
 //
-namespace gob { namespace GC0308  {
+namespace goblib { namespace GC0308  {
 
 bool complementDriver()
 {
@@ -269,7 +269,7 @@ bool complementDriver()
     if(!s || s->id.PID != GC0308_PID) { log_e("GC0308 not detected"); return false; }
 
     int ret = set_register_page(s, 0);
-    if(!ret) { log_e("Failed to write register %d",ret); return false; }
+    if(ret) { log_e("Failed to write register %d",ret); return false; }
     
     /*
       Delete set_gain_ctrl
@@ -284,13 +284,13 @@ bool complementDriver()
     s->status.agc_gain = SCCB_Read(s->slv_addr, REG_AGC_GAIN);
     // Add special effect
     s->set_special_effect = set_special_effect;
-    s->status.special_effect = gob::GC0308::SpecialEffect::NoEffect;
+    s->status.special_effect = goblib::GC0308::SpecialEffect::NoEffect;
     // Add wb_mode
     s->set_wb_mode = set_wb_mode;
-    s->status.wb_mode = gob::GC0308::WhiteBalance::Auto;
+    s->status.wb_mode = goblib::GC0308::WhiteBalance::Auto;
     // Add saturation
     s->set_saturation = set_saturation;
-    s->status.saturation = SCCB_Read(s->slv_addr, REG_SATURATION);
+     s->status.saturation = SCCB_Read(s->slv_addr, REG_SATURATION);
     
     // Replace set_contrast (Because the esp32-camera does not set a value to the status)
     s->set_contrast = set_contrast;
