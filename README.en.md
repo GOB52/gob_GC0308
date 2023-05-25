@@ -41,7 +41,7 @@ void setup()
 void foo()
 {
     sensor_t *s = esp_camera_sensor_get();
-	s->set_special_effect(s, goblib::GC0308::SpecialEffect::Sepia);
+    s->set_special_effect(s, goblib::GC0308::SpecialEffect::Sepia);
 }
 ```
 
