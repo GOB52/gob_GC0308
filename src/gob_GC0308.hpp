@@ -15,7 +15,7 @@
 
 #include <cstdint>
 
-namespace goblib { namespace GC0308  {
+namespace goblib { namespace camera {
 
 //! @enum SpecialEffect
 enum SpecialEffect : int8_t
@@ -39,6 +39,9 @@ enum WhiteBalance : int8_t
     Home,    //!< Manual (Home)
 };
 
+namespace GC0308
+{
+
 /*!
   @brief complement esp32-camera GC0308 driver
   @warning Must be call after esp_camera_init() once.
@@ -52,6 +55,8 @@ enum WhiteBalance : int8_t
 */
 bool complementDriver();
 
+//
+}
 //
 }}
 #endif

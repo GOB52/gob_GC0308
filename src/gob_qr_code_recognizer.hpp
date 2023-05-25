@@ -40,7 +40,8 @@ class QRCodeRecognizer
       @brief Scan the frame buffer
       @retval true QR code exists
       @retval false Not exists or error
-     */
+      @note Supported only if fb->formatt is not PIXELFORMAT_JPEG
+    */
     bool scan(const camera_fb_t* fb);
 
     /*! @brief Gets the number of results */
@@ -53,6 +54,15 @@ class QRCodeRecognizer
     ::quirc* _quirc{};
     std::vector<Result> _results{};
 };
+
+
+/*!
+  @brief Scan the frame buffer with quirc object.
+  @retval true QR code exists
+  @retval false Not exists or error
+  @note Supported only if fb->formatt is not PIXELFORMAT_JPEG
+*/
+bool recognizeQR(::quirc* q, const camera_fb_t* fb);
 
 //
 }

@@ -50,7 +50,7 @@ void foo()
 #include <esp_camera.h>
 #include <gob_qr_code_recognizer.hpp>
 
-goblib::QRCodeRecognizer recQR{};
+goblib::QRCodeRecognizer recQR;
 void foo()
 {
     auto fb = esp_camera_fb_get();
@@ -103,6 +103,13 @@ White balance change. The following values can be set.
 ### Replace
 * set\_contrast  
 Use esp32-camera's set_contrast, which does not rewrite the internal status, so use my own.
+
+
+## QR code recognition
+ESP32QRCodeReader is a large configuration including camera tasks and can only work with cameras that can output PIXFORMAT\_GRAYSCALE.  
+Therefore, the recognition part is independent, and a conversion mechanism to grayscale is included to enable recognition even with cameras that cannot output grayscale.  
+You can use camera\_fb\_t* with QRCodeRecognizer or your own quirc object to recognize and retrieve.  
+The pixel format of the camera supports PIXFORMAT\_JPEG, PIXFORMAT\_RAW <ins>**other than.**</ins>
 
 ## Note
 You can switch to or add your own methods by rewriting the information in sensor\_t obtained by esp\_camera\_sensor\_get().  

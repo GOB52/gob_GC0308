@@ -57,7 +57,7 @@ void foo()
 #include <esp_camera.h>
 #include <gob_qr_code_recognizer.hpp>
 
-goblib::QRCodeRecognizer recQR{};
+goblib::QRCodeRecognizer recQR;
 void foo()
 {
     auto fb = esp_camera_fb_get();
@@ -110,6 +110,13 @@ esp32-camera では set_agc_gain 相当の処理が設定されている為、�
 ### 置換
 * set\_contrast  
 esp32-camera で設定される set_contrast が内部ステータスを書き換えないので独自のものを使用。
+
+
+## QR 識別
+ESP32QRCodeReader はカメラタスクを含めた大掛かりな構成で、PIXFORMAT\_GRAYSCALE を出力できるカメラでないと動作できません。  
+そこで識別部分を独立、グレイスケールへの変換機構を内包し、グレイスケール出力できないカメラでも識別可能としました。
+camera\_fb\_t* と QRCodeRecognizer または自前の quirc オブジェクトと組み合わせて、識別と取得を行うこどができます。  
+カメラのピクセルフォーマットは PIXFORMAT\_JPEG PIXFORMAT\_RAW <ins>**以外**</ins>に対応しています。
 
 ## 備考
 esp\_camera\_sensor\_get() によって取得した sensor\_t の情報を書き換える事で独自メソッドへの切り替えや追加ができます。  

@@ -176,10 +176,10 @@ PROGMEM const Params param_wb[] =
 // --------------------------------
 // Camera methods
 
-using goblib::GC0308::SpecialEffect::NoEffect;
-using goblib::GC0308::SpecialEffect::Sepia;
-using goblib::GC0308::WhiteBalance::Auto;
-using goblib::GC0308::WhiteBalance::Home;
+using goblib::camera::SpecialEffect::NoEffect;
+using goblib::camera::SpecialEffect::Sepia;
+using goblib::camera::WhiteBalance::Auto;
+using goblib::camera::WhiteBalance::Home;
 
 inline int set_register_page(sensor_t* s, int page)
 {
@@ -261,7 +261,8 @@ int set_wb_mode(sensor_t *s, int mode)
 }
 
 //
-namespace goblib { namespace GC0308  {
+namespace goblib { namespace camera {
+namespace GC0308  {
 
 bool complementDriver()
 {
@@ -284,13 +285,13 @@ bool complementDriver()
     s->status.agc_gain = SCCB_Read(s->slv_addr, REG_AGC_GAIN);
     // Add special effect
     s->set_special_effect = set_special_effect;
-    s->status.special_effect = goblib::GC0308::SpecialEffect::NoEffect;
+    s->status.special_effect = goblib::camera::SpecialEffect::NoEffect;
     // Add wb_mode
     s->set_wb_mode = set_wb_mode;
-    s->status.wb_mode = goblib::GC0308::WhiteBalance::Auto;
+    s->status.wb_mode = goblib::camera::WhiteBalance::Auto;
     // Add saturation
     s->set_saturation = set_saturation;
-     s->status.saturation = SCCB_Read(s->slv_addr, REG_SATURATION);
+    s->status.saturation = SCCB_Read(s->slv_addr, REG_SATURATION);
     
     // Replace set_contrast (Because the esp32-camera does not set a value to the status)
     s->set_contrast = set_contrast;
@@ -298,6 +299,7 @@ bool complementDriver()
 
     return true;
 }
-
+//
+}
 //
 }}

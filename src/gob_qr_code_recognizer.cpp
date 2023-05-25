@@ -12,8 +12,12 @@
 
 namespace
 {
-// Copying while grayscaling
-void copyWhileGrayscaling(uint8_t* dst, const camera_fb_t* fb)
+inline uint_fast8_t rgb_to_grayscale8(const uint_fast8_t& r, const uint_fast8_t& g, const uint_fast8_t& b)
+{
+    return (((r << 1) + (g << 2) + g + b) >> 3);   // Compute fast grayscale approximations
+}
+
+void copy_RGB565_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
 {
     if(!dst || !fb || fb->format != PIXFORMAT_RGB565) { return; }
     uint32_t sz = fb->width * fb->height;
@@ -21,10 +25,100 @@ void copyWhileGrayscaling(uint8_t* dst, const camera_fb_t* fb)
     while(sz--)
     {
         uint_fast16_t clr = __builtin_bswap16(*src++);
+#if 0
         uint_fast8_t r = (clr & 0xF800) >> 8;
         uint_fast8_t g = (clr & 0x07E0) >> 3;
         uint_fast8_t b = (clr & 0x001F) << 3;
-        *dst++ = (((r << 1) + (g << 2) + g + b) >> 3);   // Compute fast grayscale approximations from RGB565
+#else
+        // With normalize
+        uint_fast8_t r = (clr & 0xF800) >> 8 | ((clr & 0xF800) >> 13);
+        uint_fast8_t g = (clr & 0x07E0) >> 3 | ((clr & 0x07E0) >> 9);
+        uint_fast8_t b = (clr & 0x001F) << 3 | ((clr & 0x001F) >> 2);
+#endif
+        *dst++ = rgb_to_grayscale8(r, g, b);
+    }
+}
+
+void copy_YUV422_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_YUV422) { return; }
+    uint32_t sz = fb->width * fb->height;
+    const uint16_t* src = (uint16_t*)fb->buf;
+    while(sz--)
+    {
+        // Using Y factor only [Y0U0Y1V0...]
+        *dst++ = *src++ & 0xFF;
+    }
+}
+
+void copy_YUV420_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_YUV420) { return; }
+    uint32_t sz = fb->width * fb->height;
+    // Using Y factor only [Y[width*height], UV...]
+    std::memcpy(dst, fb->buf, sz);
+}
+
+void copy_grayscale_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_GRAYSCALE) { return; }
+    std::memcpy(dst, fb->buf, fb->len);
+}
+
+void copy_RGB888_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_RGB888) { return; }
+    uint32_t sz = fb->width * fb->height;
+    const uint8_t* src = fb->buf;
+    while(sz--)
+    {
+        *dst++ = rgb_to_grayscale8(src[0], src[1], src[2]);
+        src += 3;
+    }
+}
+
+void copy_RGB444_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_RGB444) { return; }
+    uint32_t sz = fb->width * fb->height;
+    const uint16_t* src = (uint16_t*)fb->buf;
+    while(sz--)
+    {
+        uint_fast16_t clr = *src++;
+#if 0
+        uint_fast8_t r = (clr & 0x000F) << 4;
+        uint_fast8_t g = (clr & 0xF000);
+        uint_fast8_t b = (clr & 0x0F00) << 4;
+#else
+        // With normalize
+        uint_fast8_t r =  (clr & 0x000F) * 0x11;
+        uint_fast8_t g = ((clr & 0xF000) >> 12) * 0x11;
+        uint_fast8_t b = ((clr & 0x0F00) >>  8) * 0x11;
+
+#endif
+        *dst++ = rgb_to_grayscale8(r, g, b);
+    }
+}
+
+void copy_RGB555_to_grayscale(uint8_t* dst, const camera_fb_t* fb)
+{
+    if(!dst || !fb || fb->format != PIXFORMAT_RGB555) { return; }
+    uint32_t sz = fb->width * fb->height;
+    const uint16_t* src = (uint16_t*)fb->buf;
+    while(sz--)
+    {
+        uint_fast16_t clr = __builtin_bswap16(*src++);
+#if 0
+        uint_fast8_t r = (clr & 0x7C00) >> 7;
+        uint_fast8_t g = (clr & 0x03E0) >> 2;
+        uint_fast8_t b = (clr & 0x001F) << 3;
+#else
+        // With normalize
+        uint_fast8_t r = (clr & 0x7C00) >> 7 | ((clr & 0x7C00) >> 12);
+        uint_fast8_t g = (clr & 0x03E0) >> 2 | ((clr & 0x03E0) >> 7);
+        uint_fast8_t b = (clr & 0x001F) << 3 | ((clr & 0x001F) >> 2);
+#endif
+        *dst++ = rgb_to_grayscale8(r, g, b);
     }
 }
 
@@ -49,6 +143,20 @@ void quirc_flip(struct quirc_code *code)
     }
     memcpy(&code->cell_bitmap, &flipped.cell_bitmap, sizeof(flipped.cell_bitmap));
 }
+
+using copy_function = void(*)(uint8_t* dst, const camera_fb_t* fb);
+copy_function functionTable[/*pixelformat_t*/] =
+{
+    copy_RGB565_to_grayscale,
+    copy_YUV422_to_grayscale,
+    copy_YUV420_to_grayscale,
+    copy_grayscale_to_grayscale,
+    nullptr, // PIXFORMAT_JPEG
+    copy_RGB888_to_grayscale,
+    nullptr, // PIXFORMAT_RAW
+    copy_RGB444_to_grayscale,    
+    copy_RGB555_to_grayscale,
+};
 //
 }
 
@@ -66,7 +174,7 @@ QRCodeRecognizer:: ~QRCodeRecognizer()
 bool QRCodeRecognizer::scan(const camera_fb_t* fb)
 {
     _results.clear();
-    if(!fb || fb->format == PIXFORMAT_JPEG) { log_e("Invalid fb:%d", fb ? fb->format : -1); return false; }
+    if(!fb || !functionTable[fb->format]) { log_e("Invalid fb:%d", fb ? fb->format : -1); return false; }
 
     if(!_quirc)
     {
@@ -90,8 +198,9 @@ bool QRCodeRecognizer::scan(const camera_fb_t* fb)
 
     auto buf = quirc_begin(_quirc, nullptr, nullptr);
     if(!buf) { log_e("Failed to begin"); return false; }
-    copyWhileGrayscaling(buf, fb);
-    quirc_end(_quirc); // Detect
+    // Copy from the frame buffer to the quirc buffer, converting to grayscale 8bit.
+    functionTable[fb->format](buf, fb);
+    quirc_end(_quirc);
 
     if(quirc_count(_quirc))
     {
