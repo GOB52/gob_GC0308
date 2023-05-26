@@ -4,7 +4,7 @@
 
 ## 概要
 [esp32-camera](https://github.com/espressif/esp32-camera) の GC0308 ドライバを補完するライブラリです。  
-いくつかのカメラ制御の追加と、QR コード識別機能が追加されます。  
+いくつかのカメラ制御機能と、QR コード識別機能が追加されます。  
 また esp32-camera のドライバにない機能を独自に追加する際のサンプルとしても活用できます。
 
 
@@ -38,7 +38,7 @@ void setup()
     camera_config_t ccfg{};
     //     // Configuration settings...
     esp_camera_init(&ccfg);
-    goblib::GC0308::complementDriver(); // Must be call after esp_camera_init()
+    goblib::camera::GC0308::complementDriver(); // Must be call after esp_camera_init()
 }
 ```
 
@@ -48,7 +48,7 @@ void setup()
 void foo()
 {
     sensor_t *s = esp_camera_sensor_get();
-    s->set_special_effect(s, goblib::GC0308::SpecialEffect::Sepia);
+    s->set_special_effect(s, goblib::camera::SpecialEffect::Sepia);
 }
 ```
 
@@ -86,7 +86,7 @@ esp32-camera では set_agc_gain 相当の処理が設定されている為、�
 * set\_special\_effect  
 カメラエフェクト変更。以下の値を設定可能。
 
-|goblib::GC0308::SpecialEffect|説明|
+|goblib::<zero-width space>camera::SpecialEffect|説明|
 |---|---|
 |NoEffect|エフェクト無し|
 |Negative|ネガポジ変換|
@@ -99,13 +99,16 @@ esp32-camera では set_agc_gain 相当の処理が設定されている為、�
 * set\_wb\_mode  
 ホワイトバランス変更。以下の値を設定可能。
 
-|goblib::GC0308::WhiteBalance|説明|
+|goblib::<zero-width space>camera::WhiteBalance|説明|
 |---|---|
 |Auto|自動|
 |Sunny|晴天|
 |Cloudy|曇天|
 |Office|蛍光灯|
 |Home|電球|
+
+* set\_saturation  
+彩度変更。
 
 ### 置換
 * set\_contrast  
@@ -114,9 +117,16 @@ esp32-camera で設定される set_contrast が内部ステータスを書き�
 
 ## QR 識別
 ESP32QRCodeReader はカメラタスクを含めた大掛かりな構成で、PIXFORMAT\_GRAYSCALE を出力できるカメラでないと動作できません。  
-そこで識別部分を独立、グレイスケールへの変換機構を内包し、グレイスケール出力できないカメラでも識別可能としました。
+そこで識別部分を独立、グレイスケールへの変換機構を内包し、グレイスケール出力できないカメラ(GC0308)でも識別可能としました。
 camera\_fb\_t* と QRCodeRecognizer または自前の quirc オブジェクトと組み合わせて、識別と取得を行うこどができます。  
 カメラのピクセルフォーマットは PIXFORMAT\_JPEG PIXFORMAT\_RAW <ins>**以外**</ins>に対応しています。
+
+**注意 : <ins>スタック領域をかなり使用するので</ins>、独立したタスク内で識別する場合はタスク用のスタックサイズに留意のこと。**
+```
+参考
+sizeof(quirc_code) 3960
+sizeof(quirc_data) 8920
+```
 
 ## 備考
 esp\_camera\_sensor\_get() によって取得した sensor\_t の情報を書き換える事で独自メソッドへの切り替えや追加ができます。  
