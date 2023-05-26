@@ -3,9 +3,10 @@
   @brief Complement of missing features and (possibly) correction of mistake in the esp32-camera driver for GC0308
 
   @mainpage gob_complementGC0308
-  Complement of missing features and (possibly) correction of mistake in the esp32-camera driver for GC0308
+  This library complements the GC0308 driver of [esp32-camera](https://github.com/espressif/esp32-camera).  
+  Some additional camera controls and QR code recognizer added.
 
-  @author GOB / GitHub:<a href="https://github.com/GOB52/">GOB52</a> / Twitter:<a href="https://twitter.com/gob_52_gob">@GOB_52_GOB</a>
+  @author GOB / [GitHub](https://github.com/GOB52/) / [Twitter](https://twitter.com/gob_52_gob)
 
   @copyright 2023 GOB
   @copyright Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -13,32 +14,13 @@
 #ifndef GOB_GC0308_HPP
 #define GOB_GC0308_HPP
 
-#include <cstdint>
+#include "gob_camera.hpp"
 
 namespace goblib { namespace camera {
-
-//! @enum SpecialEffect
-enum SpecialEffect : int8_t
-{
-    NoEffect,  //!< @brief No effect
-    Negative,  //!< @brief Negative effect
-    Grayscale, //!< @brief Grayscale effect
-    RedTint,   //!< @brief Red tint effect
-    GreenTint, //!< @brief Green tint effect
-    BlueTint,  //!< @brief Blue tint effect
-    Sepia,     //!< @brief Sepia effect
-};
-
-//! @enum WhiteBalance
-enum WhiteBalance : int8_t
-{
-    Auto,    //!< Automatic
-    Sunny,   //!< Manual (Sunny)
-    Cloudy,  //!< Manual (Cloudy)
-    Office,  //!< Manual (Office)
-    Home,    //!< Manual (Home)
-};
-
+/*!
+  @namespace GC0308
+  @brief Functions for GC0308
+ */
 namespace GC0308
 {
 
@@ -49,6 +31,7 @@ namespace GC0308
   @note Add set_agc_gain
   @note Add set_specia_effect
   @note Add set_wb_mode
+  @note Add set_saturation
   @note Replace set_contrast
   @retval true Success
   @retval false Failure

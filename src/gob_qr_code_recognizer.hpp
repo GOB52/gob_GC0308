@@ -1,7 +1,8 @@
 /*!
   @file gob_qr_code_recognizer.hpp
   @brief Scan the camera's frame buffer to identify the QR code and retrieve information
-  @note Wrapper of the quirc library
+  @note Wrapper of the quirc library.
+  @note Using quirc library in ESP32QRCodeReader
 */
 #ifndef GOB_QR_CODE_RECOGNIZER_HPP
 #define GOB_QR_CODE_RECOGNIZER_HPP
@@ -10,7 +11,7 @@
 #include <esp_camera.h>
 #include <vector>
 
-namespace goblib {
+namespace goblib { namespace camera {
 
 /*!
   @class QRCodeRecognizer
@@ -38,9 +39,9 @@ class QRCodeRecognizer
 
     /*!
       @brief Scan the frame buffer
-      @retval true QR code exists
+      @retval true There exists a QR Code that has been extracted and decoded.
       @retval false Not exists or error
-      @note Supported only if fb->formatt is not PIXELFORMAT_JPEG
+      @note The pixel format of the camera supports PIXFORMAT_JPEG, PIXFORMAT_RAW other than.
     */
     bool scan(const camera_fb_t* fb);
 
@@ -58,12 +59,15 @@ class QRCodeRecognizer
 
 /*!
   @brief Scan the frame buffer with quirc object.
-  @retval true QR code exists
+  @param q quirc object
+  @param fb frame buffer
+  @retval true Detected
   @retval false Not exists or error
-  @note Supported only if fb->formatt is not PIXELFORMAT_JPEG
+  @note The pixel format of the camera supports PIXFORMAT_JPEG, PIXFORMAT_RAW other than.
+  @warning Since it is only detection, you need to do extract and decode by yourself.
 */
 bool recognizeQR(::quirc* q, const camera_fb_t* fb);
 
 //
-}
+}}
 #endif

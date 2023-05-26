@@ -1,8 +1,9 @@
 /*!
   @file gob_qr_code_recognizer.cpp
   @brief Scan the camera's frame buffer to identify the QR code and retrieve information
-  @note Wrapper of the quirc library
- */
+  @note Wrapper of the quirc library.
+  @note Using quirc library in ESP32QRCodeReader
+*/
 #include "gob_qr_code_recognizer.hpp"
 #include "quirc/quirc_internal.h"
 #include <cstring> // memcpy
@@ -160,7 +161,7 @@ copy_function functionTable[/*pixelformat_t*/] =
 //
 }
 
-namespace goblib {
+namespace goblib { namespace camera {
 
 QRCodeRecognizer::QRCodeRecognizer()
 {
@@ -173,6 +174,8 @@ QRCodeRecognizer:: ~QRCodeRecognizer()
 
 bool QRCodeRecognizer::scan(const camera_fb_t* fb)
 {
+    log_e("%zu : %zu", sizeof(quirc_code), sizeof(quirc_data));
+
     _results.clear();
     if(!fb || !functionTable[fb->format]) { log_e("Invalid fb:%d", fb ? fb->format : -1); return false; }
 
@@ -185,24 +188,8 @@ bool QRCodeRecognizer::scan(const camera_fb_t* fb)
             return false;
         }
     }
-    if(!_quirc->image || _quirc->w != fb->width || _quirc->h != fb->height)
-    {
-        free(_quirc->image);
-        _quirc->image = nullptr;
-        if(quirc_resize(_quirc, fb->width, fb->height) != 0) // Allocate quirc.image
-       {
-           log_e("Failed to resize");
-           return false;
-       }
-    }
 
-    auto buf = quirc_begin(_quirc, nullptr, nullptr);
-    if(!buf) { log_e("Failed to begin"); return false; }
-    // Copy from the frame buffer to the quirc buffer, converting to grayscale 8bit.
-    functionTable[fb->format](buf, fb);
-    quirc_end(_quirc);
-
-    if(quirc_count(_quirc))
+    if(recognizeQR(_quirc, fb))
     {
         int_fast8_t num = quirc_count(_quirc);
         for(int_fast8_t i = 0; i < num; ++i)
@@ -235,5 +222,27 @@ bool QRCodeRecognizer::scan(const camera_fb_t* fb)
     log_d("Decoded:%zu", _results.size());
     return !_results.empty();
 }
-//
+
+
+bool recognizeQR(::quirc* q, const camera_fb_t* fb)
+{
+    if(!q->image || q->w != fb->width || q->h != fb->height)
+    {
+        free(q->image);
+        q->image = nullptr;
+        if(quirc_resize(q, fb->width, fb->height) != 0) // Allocate quirc.image
+       {
+           log_e("Failed to resize");
+           return false;
+       }
+    }
+    auto buf = quirc_begin(q, nullptr, nullptr);
+    if(!buf) { log_e("Failed to begin"); return false; }
+    // Copy from the frame buffer to the quirc buffer, converting to grayscale 8bit.
+    functionTable[fb->format](buf, fb);
+    quirc_end(q);
+    return quirc_count(q) > 0;
 }
+
+//
+}}

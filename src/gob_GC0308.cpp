@@ -1,9 +1,6 @@
 /*!
   @file gob_GC0308.cpp
   @brief Complement of missing features and (possibly) correction of mistake in the esp32-camera driver for GC0308
-  @note  Several features were added.
-  @note Please refer to this code to add or modify other features.
-  @author GOB @GOB_52_GOB https://twitter.com/GOB_52_GOB
 */
 #include <esp_camera.h>
 #include "gob_GC0308.hpp"
@@ -28,8 +25,23 @@ constexpr uint8_t REG_AGC_GAIN = 0x50;
 constexpr uint8_t REG_SATURATION = 0xb0;
 
 struct RegVal { const uint8_t reg; const uint8_t val; };
-struct Params { const size_t sz;   const RegVal* params; };
-
+struct Params
+{
+    int set(sensor_t *s) const
+    {
+        int ret{};
+        auto cnt = this->sz;
+        auto p = this->params;
+        while(!ret && cnt--)
+        {
+            ret |= SCCB_Write(s->slv_addr, p->reg, p->val);
+            ++p;
+        }
+        return ret;
+    }
+    const uint32_t sz;
+    const RegVal* params;
+};
 // For special effect
 PROGMEM const RegVal special_no_effect[] =
 {
@@ -226,14 +238,7 @@ int set_special_effect(sensor_t *s, int effect)
     s->status.special_effect = effect;
 
     int ret = set_register_page(s, 0);
-    size_t sz = param_special_effect[effect].sz;
-    auto p = param_special_effect[effect].params;
-    while(!ret && sz--)
-    {
-        ret |= SCCB_Write(s->slv_addr, p->reg, p->val);
-        ++p;
-    }
-    return ret;
+    return ret | param_special_effect[effect].set(s);
 }
 
 int set_wb_mode(sensor_t *s, int mode)
@@ -243,19 +248,10 @@ int set_wb_mode(sensor_t *s, int mode)
     s->status.wb_mode = mode;
 
     int ret = set_register_page(s, 0);
-    
     uint8_t rval = SCCB_Read(s->slv_addr,REG_AAAA_ENABLE ); // AAAA_enable  [1] AWB enable
     rval = (rval & ~0x02U) | ((mode == Auto) ? 0x02 : 0x00);
     ret |= SCCB_Write(s->slv_addr, REG_AAAA_ENABLE, rval);
-    
-    size_t sz = param_wb[mode].sz;
-    auto p = param_wb[mode].params;
-    while(!ret && sz--)
-    {
-        ret |= SCCB_Write(s->slv_addr, p->reg, p->val);
-        ++p;
-    }
-    return ret;
+    return ret | param_wb[mode].set(s);
 }
 //
 }
