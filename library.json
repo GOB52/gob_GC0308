@@ -11,7 +11,7 @@
     "type": "git",
     "url": "https://github.com/GOB52/gob_GC0308"
   },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "build": {
     "libArchive": false
   },
@@ -20,6 +20,6 @@
   "platforms": "espressif32",
   "frameworks": "arduino",
   "dependencies": {
-      "ESP32QRCodeReader": "https://github.com/alvarowolfx/ESP32QRCodeReader.git"
+    "ESP32QRCodeReader": "https://github.com/alvarowolfx/ESP32QRCodeReader.git"
   }
 }
