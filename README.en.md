@@ -50,7 +50,7 @@ void foo()
 #include <esp_camera.h>
 #include <gob_qr_code_recognizer.hpp>
 
-goblib::QRCodeRecognizer recQR;
+goblib::camera::QRCodeRecognizer recQR;
 void foo()
 {
     auto fb = esp_camera_fb_get();
