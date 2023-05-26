@@ -18,5 +18,8 @@
   "headers": "gob_GC0308.hpp",
   "license": "MIT",
   "platforms": "espressif32",
-  "frameworks": "arduino"
+  "frameworks": "arduino",
+  "dependencies": {
+      "ESP32QRCodeReader": "https://github.com/alvarowolfx/ESP32QRCodeReader.git"
+  }
 }
